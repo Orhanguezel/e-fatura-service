@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8210),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url().optional().or(z.literal("")),
+  WORKER_ENABLED: z.coerce.boolean().default(true),
   EFATURA_ENC_KEY: z.string().min(1),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW: z.string().min(1).default("1 minute"),
