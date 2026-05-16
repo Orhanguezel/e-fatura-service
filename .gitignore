@@ -1,0 +1,22 @@
+# deps
+node_modules/
+bun.lockb.bak
+
+# build
+dist/
+build/
+*.tsbuildinfo
+
+# env (CLAUDE.md: .env commit edilmez)
+.env
+.env.local
+.env.*.local
+
+# runtime
+*.log
+.DS_Store
+coverage/
+
+# local agent/editor config
+.claude/
+.cursor/
