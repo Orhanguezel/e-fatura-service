@@ -15,7 +15,10 @@ const envSchema = z.object({
   EFATURA_DEV_TENANT_API_KEY: z.string().optional(),
   EFATURA_DEV_INTEGRATOR_CREDENTIALS: z.string().default("{}"),
   EFATURA_DEV_WEBHOOK_SECRET: z.string().optional(),
-  EFATURA_NILVERA_MOCK: z.coerce.boolean().default(false)
+  EFATURA_NILVERA_MOCK: z.coerce.boolean().default(false),
+  WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  STATUS_SYNC_CRON: z.string().min(1).default("*/15 * * * *"),
+  STATUS_SYNC_BATCH: z.coerce.number().int().positive().default(50)
 });
 
 export type Env = z.infer<typeof envSchema>;
