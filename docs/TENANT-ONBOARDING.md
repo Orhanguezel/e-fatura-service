@@ -14,6 +14,27 @@
 > **GoldMoodAstro: aynı firma/VKN** (kullanıcı teyidi 2026-05-16) → Faz 0 tekrarı
 > yok. Sportoonline tenant'ının Nilvera credential'ı aynı; yalnız yeni tenant_key.
 
+## Credential matrisi (ne ALINIR / ne ÜRETİLİR)
+
+**Aynı firma/VKN tenant** (örn. goldmoodastro = sportoonline VKN'si):
+
+| Kalem | Dışarıdan alınır mı | Açıklama |
+|---|---|---|
+| Nilvera hesabı/sözleşme/API key | ❌ Hayır | Mevcut VKN tenant'ının PROD key'i yeniden kullanılır |
+| Mali mühür / GİB mükellefiyeti | ❌ Hayır | Aynı VKN zaten mükellef |
+| `tenant_key` | ✅ Servis üretir | Projeye özel |
+| **`X-Api-Key`** | ✅ Servis üretir | Her tenant **FARKLI** (izolasyon), app `.env`'ine |
+| **`webhook_secret`** | ✅ Servis üretir | Her tenant farklı (HMAC) |
+| `integrator_credentials` | ✅ Servis yazar | Aynı VKN → **aynı Nilvera key**, şifreli |
+
+→ Aynı-VKN tenant **dışarıya hiçbir başvuru yapmaz**; tüm anahtarlar servis
+tarafından üretilir/yeniden kullanılır. Tek karar (mali müşavir): aynı VKN
+altında **ayrı fatura serisi/şube** isteniyor mu (muhasebe ayrıştırması;
+Nilvera panel konfigürasyonu, yeni hesap değil).
+
+**Farklı firma/VKN tenant** → ek olarak `FAZ-0-ONKOSULLAR.md` (kendi Nilvera
+hesabı + mükellefiyet) gerekir.
+
 ## Adımlar
 
 ### 1. Tenant kaydı (servis DB)
