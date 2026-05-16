@@ -1,5 +1,22 @@
 # Faz 2 Kod Review — Claude (mimar)
 
+> ## ✅ RE-REVIEW (snapshot `9c9bf5a`): KABUL — `main`'e merge edildi
+> Tüm blokerler kapandı:
+> - **B1 çözüldü:** `invoiceQueue.ts` lazy factory (`getInvoiceQueue/closeInvoiceQueue`),
+>   import-time `new Queue/Redis` yok; `new Worker` factory içinde. Test suite
+>   tam çalışmada **23/23 yeşil** (non-determinizm bitti).
+> - **B2 çözüldü:** Faz 3 sızıntısı (webhook/sync) tamamen kaldırıldı. Kapsam =
+>   builder + provider(mock+http) + factory + manager + invoice-create kuyruğu.
+> - **B3 çözüldü:** `bun run lint` temiz, `bun run build` temiz.
+> - Para builder float-suz BigInt korunmuş; `POST /v1/invoices` doğru
+>   `buildInvoiceRequest` + lazy queue kullanıyor (eski parseFloat math gitti).
+> - NilveraProvider HTTP yolu sandbox credential olmadan E2E doğrulanamaz
+>   (kullanıcı notu) → izole test yeşil, gerçek kanıt Faz 6'ya ertelendi.
+>
+> Aşağısı ilk review (tarihsel kayıt).
+>
+> ---
+>
 > Branch: `codex/phase-2-nilvera` snapshot `c561307`.
 > Kıyas: [PROVIDER-SPEC.md](PROVIDER-SPEC.md) · [API-CONTRACT.md](API-CONTRACT.md) ·
 > [WORK-PLAN.md](WORK-PLAN.md) · CLAUDE.md.
