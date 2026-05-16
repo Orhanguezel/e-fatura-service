@@ -7,6 +7,7 @@ import { invoices, tenants } from "../db/schema";
 import { InvoiceManager } from "../domain/InvoiceManager";
 import { IntegratorError } from "../domain/providers/nilvera/errors";
 import { transitionInvoice } from "../lib/invoiceTransitions";
+import { enqueueInvoiceWebhook } from "../lib/webhookNotify";
 import { mapApiPayloadToInvoiceRequest } from "../domain/mapApiPayload";
 import type { InvoiceResult } from "../domain/types";
 import { reliabilityBackoffStrategy } from "../lib/queueBackoff";
@@ -103,6 +104,8 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
             errorMessage: null
           }
         });
+
+        await enqueueInvoiceWebhook(invoice.id, result.status, env);
       } catch (error: unknown) {
         const message = getErrorMessage(error);
         const retryable =
@@ -116,6 +119,8 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
             attempts: invoice.attempts + 1
           }
         });
+
+        await enqueueInvoiceWebhook(invoice.id, "failed", env);
 
         if (!retryable) {
           return;
