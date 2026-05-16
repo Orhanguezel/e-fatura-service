@@ -11,12 +11,15 @@
 | **Aynı firma/VKN** (sportoonline ile) | ❌ Tekrar YOK | Ek sözleşme/mükellefiyet yok; mevcut Nilvera hesabı kapsar |
 | Farklı firma/VKN | ✅ Yeni Faz 0 (`FAZ-0-ONKOSULLAR.md`) | Ayrı Nilvera hesabı + mükellefiyet |
 
-> **GoldMoodAstro: aynı firma/VKN** (kullanıcı teyidi 2026-05-16) → Faz 0 tekrarı
-> yok. Sportoonline tenant'ının Nilvera credential'ı aynı; yalnız yeni tenant_key.
+> **GoldMoodAstro: FARKLI firma/VKN** (kullanıcı düzeltmesi 2026-05-16:
+> bambaşka firma, ayrı tenant) → **kendi Faz 0'ını yapar** (`FAZ-0-ONKOSULLAR.md`):
+> kendi Nilvera hesabı/sözleşme/key + mali mühür + GİB mükellefiyeti + mali
+> müşavir teyidi. Sportoonline credential'ı kullanılamaz. Servis tarafı yine
+> değişmez (yeni tenant_key + kendi şifreli Nilvera key'i).
 
 ## Credential matrisi (ne ALINIR / ne ÜRETİLİR)
 
-**Aynı firma/VKN tenant** (örn. goldmoodastro = sportoonline VKN'si):
+**Aynı firma/VKN tenant** (örnek senaryo — yeni proje mevcut bir VKN'ye eklenirse):
 
 | Kalem | Dışarıdan alınır mı | Açıklama |
 |---|---|---|
@@ -67,11 +70,15 @@ Bileşenler (her stack'te muadili):
 
 ### 3. Doğrulama
 - Sandbox tenant + test ödemesi → PDF+ETTN, iptal/iade, webhook, idempotency.
-- Mali müşavir KDV/senaryo teyidi (aynı firma → sportoonline ile aynı profil
-  büyük olasılıkla; yine de proje gelir modeli farklıysa gözden geçir).
+- Mali müşavir KDV/senaryo teyidi: aynı VKN ise mevcut profil; **farklı VKN ise
+  tenant'ın kendi mali müşaviri/vergi profili** (ayrı Faz 0).
 
 ## GoldMoodAstro — özel notlar
 
+- **Firma/VKN:** ⚠️ sportoonline'dan **bağımsız tüzel kişi** (kullanıcı
+  düzeltmesi 2026-05-16). → **kendi Faz 0'ını yapar** (kendi Nilvera hesabı/
+  key + mali mühür + GİB mükellefiyeti + mali müşavir). Sportoonline credential
+  paylaşılmaz. Servis: ayrı tenant + goldmoodastro'nun kendi şifreli Nilvera key'i.
 - **Gelir modeli:** web/site ödemesi (Iyzico/Stripe) — sportoonline'a en yakın;
   ödeme tamamlanınca fatura. (Mobil in-app satın alma DEĞİL → Apple/Google
   merchant-of-record komplikasyonu yok.)
