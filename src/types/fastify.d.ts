@@ -10,6 +10,7 @@ declare module "fastify" {
     db: Database;
     dbPool: DatabasePool;
     authenticate: AuthenticateHook;
+    authenticateAdmin: AuthenticateHook;
   }
 
   interface FastifyRequest {

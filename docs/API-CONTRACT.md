@@ -32,6 +32,7 @@ IP allowlist tanımlıysa (D2) ve istek dışı IP'den ise `403 ip_not_allowed`.
 | 400 | `validation_error` | gövde/şema hatalı (`details` alan listesi) |
 | 401 | `unauthorized` | X-Api-Key yok/yanlış |
 | 403 | `ip_not_allowed` | IP allowlist reddi |
+| 403 | `tenant_inactive` | Tenant pasif |
 | 404 | `invoice_not_found` | id bu tenant'a ait değil/yok |
 | 409 | `idempotency_conflict` | aynı key farklı payload ile geldi |
 | 422 | `invoice_rule_violation` | iptal süresi geçti, geçersiz VKN vb. |
