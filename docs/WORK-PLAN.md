@@ -141,6 +141,8 @@ Bağımlılık: **F1 → F2 → F3 → F4 → F6**. **F5, F1 sonrası paralel** 
 | Cursor | Laravel kod cila | — |
 **Çıktı:** sportoonline pilot tenant olarak servisi tüketiyor.
 **Not:** F1 kontratı donduktan sonra mock servisle başlar; gerçek servisi F2 sonrası bağlar.
+**Spec hazır:** [HANDOFF-FAZ5-SPORTOONLINE.md](HANDOFF-FAZ5-SPORTOONLINE.md) — Codex
+`quickecommerce` repo'sunda `codex/faz5-einvoice-client` branch'inde implemente eder.
 
 ### Faz 6 — VPS Deploy + Canlı Teyit + Diğer Tenant'lar
 **Sahip:** Claude (plan) → Codex (script) → Antigravity (canlı tek-fatura teyidi)
