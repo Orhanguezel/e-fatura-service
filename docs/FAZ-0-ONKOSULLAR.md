@@ -80,3 +80,60 @@ Aşağıdakiler servis DB'sinde `tenants` kaydına (sportoonline) yazılır:
 | e-Arşiv mükellefiyet | Mali müşavir + Nilvera | GİB / Nilvera |
 | KDV/istisna/iade/seri kararı | Mali müşavir | (yazılı teyit) |
 | Firma bilgileri + prod credential | Firma sahibi → Claude/deploy | servis `.env`/tenant |
+
+---
+
+## 8. sportoonline — şimdi karar/hazırlık (Nilvera cevabı beklenirken)
+
+| Karar / bilgi | Neden |
+|---|---|
+| Hangi firma/**VKN** ile fatura kesilecek (sportoonline'ı işleten tüzel kişi) | Nilvera hesabı + GİB mükellefiyeti bu VKN'ye açılır |
+| **Tahmini aylık fatura adedi** (~X/ay) | Nilvera kontör/paket fiyatını buna göre verir |
+| **Mali müşavir** (ad + iletişim) | GİB e-Arşiv mükellefiyeti + KDV/iade teyidi |
+| e-Arşiv (B2C) — zaten karar | Nilvera'ya "e-Fatura değil, e-Arşiv API" demek için |
+
+> ⚠️ Nilvera'nın "3 Yıllık E-İmza" kampanyası **bizim ihtiyacımız DEĞİL** (o e-İmza/NES).
+> Gereken: **e-Arşiv API entegrasyonu (özel entegratör)** + gerekiyorsa **Mali Mühür** (tüzel kişi).
+
+## 9. Nilvera'ya gönderilecek mesaj (sportoonline adına — şablon)
+
+> **Konu: e-Arşiv API Entegrasyonu — Bilgi ve Test Ortamı Talebi**
+>
+> Merhaba,
+>
+> Sportoonline (sportoonline.com) e-ticaret sitemiz için **API üzerinden e-Arşiv
+> fatura** kesimi yapmak istiyoruz. Özel entegratör çözümünüzle ilgileniyoruz;
+> teknik entegrasyonumuz hazır, yalnızca hesap ve API erişimi için ilerlemek istiyoruz.
+>
+> Lütfen şu konularda bilgi verir misiniz:
+>
+> 1. **Mali mühür:** Faturalar **sizin özel entegratör mührünüzle** mi imzalanıyor,
+>    yoksa bizim **kendi Mali Mührümüzü** mü temin etmemiz gerekiyor? (Gerekiyorsa süreç/süre?)
+> 2. **Fiyatlandırma:** e-Arşiv API paketi / kontör fiyatı nasıl?
+>    (Aylık tahmini fatura adedimiz: **~[ADET]/ay**.)
+> 3. **Test ortamı:** Entegrasyonu doğrulamak için **sandbox/test API anahtarını**
+>    öncelikli alabilir miyiz?
+> 4. **Mükellefiyet:** GİB e-Arşiv mükellefiyet açılışı için bizden/mali
+>    müşavirimizden hangi belge/adımlar gerekiyor?
+>
+> Firma/iletişim:
+> - Ünvan / VKN: **[ŞİRKET ÜNVANI] / [VKN]**
+> - Vergi dairesi: **[VERGİ DAİRESİ]**
+> - Yetkili: **[AD SOYAD]** — Tel: **[TELEFON]** — E-posta: **[E-POSTA]**
+> - Mali müşavir: **[AD / İLETİŞİM]**
+>
+> Önceliğimiz **test ortamı API anahtarını** alıp entegrasyonu doğrulamak;
+> ardından sözleşme ve canlı geçişi planlamak.
+>
+> Teşekkürler,
+> **[AD SOYAD]** — Sportoonline
+
+`[...]` alanları firma bilgileriyle doldurulur.
+
+## 10. Nilvera cevabı sonrası akış
+
+1. **Sandbox API anahtarı** → Claude tenant'a şifreli işler, `EFATURA_NILVERA_MOCK=false`
+   (test) → test siparişiyle **PDF + ETTN** doğrulanır.
+2. Mali müşavir KDV/istisna/iade'yi **yazılı** teyit eder.
+3. Sözleşme + (gerekiyorsa) mali mühür → **PROD API anahtarı** → canlıda
+   **tek gerçek fatura** teyidi → tam açılış.
