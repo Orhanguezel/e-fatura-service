@@ -27,20 +27,52 @@
 - Webhook route `webhooks/einvoere` no-auth server-to-server grupta (geliver/paytr
   yanında), CSRF dışı (api stateless) — yalnız imza korur. Doğru.
 
-## Canlı öncesi ÖN KOŞULLAR (bloke edici değil ama go-live şart)
+## Canlı öncesi ÖN KOŞULLAR — DURUM (2026-05-16, Claude ele aldı)
 
-1. **`buyer.tckn_vkn` placeholder** (`config einvoice.default_tckn`,
-   vars. `11111111111`). Gerçek alıcı kimliği siparişten toplanmıyor. e-arşiv
-   nihai tüketici/kimlik kuralı muhasebe ile netleşmeli; sandbox'ta sorun değil,
-   **canlıda gerçek VKN/TCKN veya nihai-tüketici akışı** gerekir. (Yüksek)
-2. **Order alan eşleme doğrulaması.** Builder `orderMaster/orderDetail`,
-   `variant_details`, `tax_rate`, `coupon_discount_amount_admin`,
-   `shipping_charge` kullanıyor (null-coalesce ile crash etmez ama **fatura
-   doğruluğu** bu eşlemeye bağlı). Tek gerçek siparişle üretilen payload
-   gözden geçirilmeli (sandbox). (Orta)
-3. **Test kapsamı ince.** Yalnız webhook verifier unit testi var. HANDOFF DoD:
-   `EInvoiceClient` Http::fake (202/200/4xx/5xx), feature (paid→job→`e_invoices`),
-   contract testi eksik. Canlı öncesi eklenmeli. (Orta)
+1. **`buyer.tckn_vkn` — ÇÖZÜLDÜ (tasarım gereği doğru).** sportoonline saf
+   B2C perakende; `OrderAddress`/`Customer` modellerinde **hiç vergi-no/TCKN
+   alanı yok** (kontrol edildi). Bu durumda GİB e-arşiv standardı **nihai
+   tüketici = `11111111111`** — yani mevcut default **doğru davranış**, defect
+   değil. Risk Yüksek→tasarım. (Kurumsal/VKN faturası gerekirse checkout'ta
+   vergi-no toplama = ayrı ürün kararı, bu entegrasyon kapsamı dışı.)
+2. **Order alan eşleme — ÇÖZÜLDÜ (statik doğrulandı).** `OrderMaster`
+   (orderAddress/customer/order ilişkileri, coupon_discount_amount_admin,
+   product_discount_amount, shipping_charge, currency_code, exchange_rate),
+   `OrderDetail` (variant_details, price, quantity, tax_rate), `OrderAddress`
+   (name, email, address, district_name, city_name), `Order` (shipping_charge,
+   orderMaster/orderDetail/orderAddress) — **builder eşlemesi modellerle birebir
+   tutarlı**.
+3. **Test kapsamı — ÇÖZÜLDÜ.** Eklendi (Claude):
+   `tests/Unit/EInvoiceClientTest.php` (Http::fake: 202 create + Idempotency/
+   X-Api-Key header, 200 repeat, 409 hata-zarfı→exception, 5xx, yapılandırılmamış),
+   `tests/Unit/EInvoicePayloadBuilderTest.php` (API-CONTRACT şekli, nihai-tüketici
+   TCKN, USD kur, kargo yok). **phpunit 10/10 yeşil** (yeni 8 + mevcut webhook 2).
+   Ayrıca Codex'in bozduğu **gerçek bug düzeltildi**: `fromOrder(Order )` →
+   `fromOrder(Order $order)` (parametre değişkeni silinmişti, parse error).
+   Eksik (canlı öncesi, opsiyonel): feature testi (paid→job→`e_invoices`).
+
+## ⛔ ÜRETİM GÜVENLİĞİ İNCİDENTİ (acil — kullanıcı aksiyonu)
+
+Faz 5 ön koşul çalışması sırasında, **Codex'in `quickecommerce/backend-laravel`
+canlı üretim repo'sunu bozduğu** tespit edildi:
+
+- `routes/api.php` git durumu **`UU` (çözülmemiş merge conflict)** —
+  satır 1'de bozuk `use AppHttpControllersApiV1AdminAdminEInvoiceController;`
+  (backslash'sız namespace, Codex'in hatalı conflict çözümü). Dosya her
+  istekte yüklenir; `php -l` şu an geçiyor ama **conflict'li/yarım**.
+- `app/Http/Controllers/Api/V1/Admin/AdminEInvoiceController.php` —
+  **php -l: parse ERROR** + zaten Faz 4 admin API'si **e-fatura-service'te**
+  yapıldı (yanlış repo, scope-creep, untracked).
+- Daha önce `EInvoicePayloadBuilder.php` parse error'u (Claude düzeltti).
+
+**Claude bu üretim repo'sunda git/commit/merge YAPMADI** (geri alınamaz, canlı,
+~205 karışık değişiklik, in-progress conflict). Önerilen kullanıcı aksiyonu:
+1. Faz 5 dosyalarını `codex/faz5-einvoice-client` branch'ine **izole et**.
+2. `routes/api.php` conflict'ini elle çöz (legit Faz 5 satırı 208
+   `webhooks/einvoice` korunmalı; bozuk satır 1 `use AppHttp...` kaldırılmalı).
+3. Bozuk/scope-creep `AdminEInvoiceController.php`'yi **sil** (admin API
+   e-fatura-service Faz 4'te var, sportoonline'a ait değil).
+4. Codex'i bu üretim repo'sunda **durdur**; branch izolasyonunu zorla.
 
 ## Süreç uyarısı (önemli)
 
