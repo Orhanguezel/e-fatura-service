@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+build
+coverage
+tests
+.env
+.env.*
+*.log
+.DS_Store
+.claude
+.cursor
+docs
+nginx
+deploy
