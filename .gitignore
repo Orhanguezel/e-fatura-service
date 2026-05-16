@@ -1,7 +1,10 @@
+# deps
 node_modules/
+bun.lockb.bak
+
+# build
 dist/
 build/
-coverage/
 *.tsbuildinfo
 
 # env (CLAUDE.md: .env commit edilmez)
@@ -9,8 +12,10 @@ coverage/
 .env.local
 .env.*.local
 
+# runtime
 *.log
 .DS_Store
+coverage/
 
 # local agent/editor config
 .claude/

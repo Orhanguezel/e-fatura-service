@@ -24,11 +24,20 @@
 | **Antigravity** | Doğrulama. Test çalıştırma, sandbox fatura/PDF teyidi, admin UI screenshot | Test raporu, kabul kanıtı |
 | **Cursor** | Cila. Refactor, tip sıkılaştırma, boilerplate, lint/format | Temizlenmiş diff |
 
-**Çakışma önleme (CLAUDE.md):**
-1. Aynı dosyada aynı anda iki AI yok → modül sahipliği aşağıda kilitli.
-2. Codex bir fazı bitirmeden Antigravity aynı branch'i doğrulamaz.
-3. Akış sıralı: Claude spec → Codex implement → Antigravity verify → Cursor polish.
-4. Her faz tek branch; faz bitince `main`'e merge, sonraki faz yeni branch.
+**Çakışma önleme — BRANCH İZOLASYONU (kullanıcı kararı 2026-05-16):**
+1. **Her AI kendi branch'inde çalışır. Aynı branch'te iki AI YOK.**
+   - Claude → `claude/*` (spec, review, fix, merge)
+   - Codex → `codex/*` (implementasyon, örn. `codex/phase-2-nilvera`)
+   - Cursor → `cursor/*` (refactor/cila)
+   - Antigravity → doğrulama (kod yazmaz; bulguyu rapora)
+2. **`main`'e merge + commit + deploy yalnızca Claude.** Codex/Cursor branch'lerini
+   Claude review edip merge eder; doğrudan `main`'e push yok.
+3. `docs/` spec'leri yalnızca Claude yazar (Faz spec çakışması biter).
+4. Akış sıralı: Claude spec → Codex implement (kendi branch) → Claude review →
+   Antigravity verify → Cursor polish (kendi branch) → Claude merge.
+5. Codex bir fazı bitirmeden Antigravity doğrulamaz.
+6. Branch isimleri faz içerir: `codex/phase-N-<konu>`. Faz bitince Claude
+   `main`'e merge eder, sonraki faz yeni branch.
 
 ---
 
