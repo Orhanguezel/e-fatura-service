@@ -43,19 +43,6 @@ export class InvoiceManager {
     return provider.getStatus(externalId, context);
   }
 
-  async cancelInvoice(
-    tenant: Tenant,
-    externalId: string,
-    reason: string
-  ): Promise<InvoiceResult> {
-    const { provider, context } = createProviderResolution(
-      tenant,
-      this.resolutionOptions()
-    );
-
-    return provider.cancel(externalId, reason, context);
-  }
-
   async getPdf(
     tenant: Tenant,
     externalId: string

@@ -3,9 +3,6 @@ import type { FastifyPluginAsync } from "fastify";
 
 import { invoiceEvents, invoices, type Tenant } from "../../db/schema";
 import { buildInvoiceRequest } from "../../domain/buildInvoiceRequest";
-import { resolveCancelAction } from "../../domain/cancelRules";
-import { loadEnv } from "../../config/env";
-import { cancelQueue } from "../../queue/cancelQueue";
 import { AppError } from "../../lib/errors";
 import {
   cancelInvoiceSchema,
@@ -14,7 +11,6 @@ import {
 } from "./invoiceSchemas";
 
 export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
-  const env = loadEnv();
   fastify.addHook("preHandler", fastify.authenticate);
 
   function requireTenant(tenant: Tenant | undefined): Tenant {
@@ -160,8 +156,8 @@ export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
 
       // 4. Queue Job
       try {
-        const { invoiceQueue } = await import("../../queue/invoiceQueue");
-        await invoiceQueue.add("create-invoice", { invoiceId });
+        const { getInvoiceQueue } = await import("../../queue/invoiceQueue");
+        await getInvoiceQueue().add("create-invoice", { invoiceId });
       } catch (error) {
         throw new AppError(
           503,
@@ -326,60 +322,15 @@ export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     async (request, reply) => {
-      const tenant = requireTenant(request.tenant);
-      const params = invoiceParamsSchema.parse(request.params);
-      const body = cancelInvoiceSchema.parse(request.body);
+      invoiceParamsSchema.parse(request.params);
+      cancelInvoiceSchema.parse(request.body);
 
-      const [invoice] = await fastify.db
-        .select()
-        .from(invoices)
-        .where(and(eq(invoices.tenantId, tenant.id), eq(invoices.id, params.id)))
-        .limit(1);
-
-      if (!invoice) {
-        throw new AppError(404, "invoice_not_found", "Invoice not found");
-      }
-
-      if (invoice.status === "cancelled" || invoice.status === "refunded") {
-        return reply.code(200).send({
-          invoice_id: invoice.id,
-          status: invoice.status
-        });
-      }
-
-      const resolution = resolveCancelAction(
-        invoice,
-        tenant,
-        env.EFATURA_CANCEL_WINDOW_DAYS
-      );
-
-      await fastify.db.insert(invoiceEvents).values({
-        invoiceId: invoice.id,
-        fromStatus: invoice.status,
-        toStatus: invoice.status,
-        actor: "api",
-        reason: `Cancel queued (${resolution.action}): ${body.reason}`,
-        createdAt: new Date()
-      });
-
-      try {
-        await cancelQueue.add("cancel-invoice", {
-          invoiceId: invoice.id,
-          reason: body.reason,
-          targetStatus: resolution.targetStatus,
-          invoiceType: resolution.invoiceType
-        });
-      } catch {
-        throw new AppError(
-          503,
-          "service_unavailable",
-          "Cancel queue is unavailable"
-        );
-      }
-
-      return reply.code(202).send({
-        invoice_id: invoice.id,
-        status: resolution.targetStatus
+      return reply.code(501).send({
+        error: {
+          code: "not_implemented",
+          message: "Invoice cancellation is scheduled for phase 4",
+          details: {}
+        }
       });
     }
   );

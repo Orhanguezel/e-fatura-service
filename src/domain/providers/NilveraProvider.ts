@@ -32,6 +32,30 @@ function asRawRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : { value };
 }
 
+function toBuffer(value: unknown): Buffer {
+  if (value instanceof ArrayBuffer) {
+    return Buffer.from(value);
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  }
+
+  if (Buffer.isBuffer(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return Buffer.from(value);
+  }
+
+  throw new IntegratorError("Nilvera PDF response is not binary", {
+    retryable: true,
+    code: "integrator_error",
+    raw: value
+  });
+}
+
 function parseDraftCreateResponse(value: unknown): DraftCreateResponse {
   if (!isRecord(value)) {
     return {};
@@ -228,7 +252,7 @@ export class NilveraProvider implements InvoiceProvider {
         responseType: "arraybuffer"
       });
 
-      return Buffer.from(response.data as ArrayBuffer);
+      return toBuffer(response.data);
     } catch (error) {
       context.logger.error("[Nilvera] PDF download failed", {
         externalId,

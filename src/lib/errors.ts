@@ -10,7 +10,6 @@ export type ApiErrorCode =
   | "pdf_not_ready"
   | "integrator_error"
   | "service_unavailable"
-  | "webhook_unreachable"
   | "not_implemented"
   | "internal_server_error"
   | "invalid_state"
