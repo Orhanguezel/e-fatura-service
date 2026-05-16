@@ -1,18 +1,14 @@
-# deps
 node_modules/
-bun.lockb.bak
+dist/
+build/
+coverage/
+*.tsbuildinfo
 
 # env (CLAUDE.md: .env commit edilmez)
 .env
 .env.local
 .env.*.local
 
-# build
-dist/
-build/
-*.tsbuildinfo
-
-# runtime
 *.log
 .DS_Store
 
