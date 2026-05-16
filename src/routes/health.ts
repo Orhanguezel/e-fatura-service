@@ -26,10 +26,11 @@ export const healthRoutes: FastifyPluginAsync<{ redisUrl?: string }> = async (
     },
     async () => {
       await fastify.dbPool.query("SELECT 1");
+      const redis = await checkRedisHealth(options.redisUrl);
 
       return {
         status: "ok",
-        redis: await checkRedisHealth(options.redisUrl),
+        redis,
         db: "up"
       };
     }

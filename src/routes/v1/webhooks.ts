@@ -1,14 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 
-function notImplemented(message: string) {
-  return {
-    error: {
-      code: "not_implemented",
-      message,
-      details: {}
-    }
-  };
-}
+import { notImplementedResponse } from "../../lib/notImplemented";
 
 export const webhookRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -24,6 +16,10 @@ export const webhookRoutes: FastifyPluginAsync = async (fastify) => {
     async (_request, reply) =>
       reply
         .code(501)
-        .send(notImplemented("Webhook test delivery is scheduled for phase 3"))
+        .send(
+          notImplementedResponse(
+            "Webhook test delivery is scheduled for phase 3"
+          )
+        )
   );
 };

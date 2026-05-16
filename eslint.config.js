@@ -16,6 +16,10 @@ export default tseslint.config(
         "error",
         { prefer: "type-imports" }
       ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
+      ],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/require-await": "off"
     }

@@ -6,6 +6,7 @@ export type ApiErrorCode =
   | "idempotency_conflict"
   | "invoice_rule_violation"
   | "rate_limited"
+  | "pdf_not_ready"
   | "integrator_error"
   | "service_unavailable"
   | "not_implemented"

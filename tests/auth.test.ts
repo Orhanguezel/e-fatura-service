@@ -3,6 +3,7 @@ import sensible from "@fastify/sensible";
 import Fastify from "fastify";
 import fp from "fastify-plugin";
 
+import { errorHandlerPlugin } from "../src/plugins/errorHandler";
 import { authPlugin } from "../src/plugins/auth";
 import type { Database } from "../src/db/client";
 import { hashApiKey, safeEqualHash } from "../src/lib/apiKey";
@@ -37,6 +38,7 @@ describe("api key hashing", () => {
   it("rejects requests without X-Api-Key", async () => {
     const app = Fastify({ logger: false });
     await app.register(sensible);
+    await app.register(errorHandlerPlugin);
     await app.register(
       fp(
         async (fastify) => {
@@ -53,6 +55,13 @@ describe("api key hashing", () => {
     const response = await app.inject({ method: "GET", url: "/private" });
 
     expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      error: {
+        code: "unauthorized",
+        message: "X-Api-Key header is required",
+        details: {}
+      }
+    });
     await app.close();
   });
 });
