@@ -5,7 +5,8 @@ import {
   invoiceEvents,
   invoices,
   type Invoice,
-  type InvoiceStatus
+  type InvoiceStatus,
+  type InvoiceType
 } from "../db/schema";
 
 export async function transitionInvoice(
@@ -23,6 +24,8 @@ export async function transitionInvoice(
       errorMessage: string | null;
       responsePayload: Record<string, unknown> | null;
       sentAt: Date | null;
+      cancelledAt: Date | null;
+      type: InvoiceType;
       attempts: number;
     }>;
   }
@@ -58,6 +61,12 @@ export async function transitionInvoice(
         : {}),
       ...(options.patch?.sentAt !== undefined
         ? { sentAt: options.patch.sentAt }
+        : {}),
+      ...(options.patch?.cancelledAt !== undefined
+        ? { cancelledAt: options.patch.cancelledAt }
+        : {}),
+      ...(options.patch?.type !== undefined
+        ? { type: options.patch.type }
         : {}),
       ...(options.patch?.attempts !== undefined
         ? { attempts: options.patch.attempts }

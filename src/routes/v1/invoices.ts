@@ -1,8 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 
+import { loadEnv } from "../../config/env";
 import { invoiceEvents, invoices, type Tenant } from "../../db/schema";
 import { buildInvoiceRequest } from "../../domain/buildInvoiceRequest";
+import { decideCancel } from "../../domain/cancelRules";
 import { AppError } from "../../lib/errors";
 import {
   cancelInvoiceSchema,
@@ -322,15 +324,37 @@ export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     async (request, reply) => {
-      invoiceParamsSchema.parse(request.params);
-      cancelInvoiceSchema.parse(request.body);
+      const tenant = requireTenant(request.tenant);
+      const params = invoiceParamsSchema.parse(request.params);
+      const { reason } = cancelInvoiceSchema.parse(request.body);
 
-      return reply.code(501).send({
-        error: {
-          code: "not_implemented",
-          message: "Invoice cancellation is scheduled for phase 4",
-          details: {}
-        }
+      const [invoice] = await fastify.db
+        .select()
+        .from(invoices)
+        .where(
+          and(eq(invoices.tenantId, tenant.id), eq(invoices.id, params.id))
+        )
+        .limit(1);
+
+      if (!invoice) {
+        throw new AppError(404, "invoice_not_found", "Invoice not found");
+      }
+
+      // Senkron kural doğrulaması (422 burada döner); gerçek iptal worker'da.
+      const decision = decideCancel(
+        invoice,
+        loadEnv().EFATURA_CANCEL_WINDOW_DAYS
+      );
+
+      const { getCancelQueue } = await import("../../queue/cancelQueue");
+      await getCancelQueue().add("cancel-invoice", {
+        invoiceId: invoice.id,
+        reason
+      });
+
+      return reply.code(202).send({
+        invoice_id: invoice.id,
+        status: decision.targetStatus
       });
     }
   );
