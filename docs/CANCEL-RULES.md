@@ -1,5 +1,10 @@
 # İptal / İade Kuralları (Faz 4)
 
+> **Claude sahiplendi (Faz 4 impl).** Uygulanan davranış aşağıyla birebir.
+> Erteleme: `tenant.tax_profile.cancel_window_days` tenant-bazlı override
+> **henüz uygulanmadı** — şimdilik yalnız `EFATURA_CANCEL_WINDOW_DAYS` (vars. 7).
+> Muhasebe teyidiyle tenant override + tam iade UBL akışı sonraki iterasyon.
+>
 > Muhasebe teyidi öncesi **varsayılan** kurallar. `tenant.tax_profile.cancel_window_days`
 > ile tenant bazında override edilebilir.
 

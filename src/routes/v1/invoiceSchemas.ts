@@ -55,4 +55,21 @@ export const invoiceParamsSchema = z.object({
   id: z.coerce.number().int().positive()
 });
 
+export const adminListQuerySchema = z.object({
+  status: z
+    .enum([
+      "pending",
+      "sending",
+      "sent",
+      "approved",
+      "failed",
+      "cancelled",
+      "refunded"
+    ])
+    .optional(),
+  tenant_id: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(200).default(50),
+  offset: z.coerce.number().int().nonnegative().default(0)
+});
+
 export type InvoiceCreateBody = z.infer<typeof invoiceCreateSchema>;

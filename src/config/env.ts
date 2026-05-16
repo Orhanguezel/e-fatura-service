@@ -18,7 +18,9 @@ const envSchema = z.object({
   EFATURA_NILVERA_MOCK: z.coerce.boolean().default(false),
   WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   STATUS_SYNC_CRON: z.string().min(1).default("*/15 * * * *"),
-  STATUS_SYNC_BATCH: z.coerce.number().int().positive().default(50)
+  STATUS_SYNC_BATCH: z.coerce.number().int().positive().default(50),
+  EFATURA_CANCEL_WINDOW_DAYS: z.coerce.number().int().positive().default(7),
+  EFATURA_ADMIN_TOKEN: z.string().min(1).optional()
 });
 
 export type Env = z.infer<typeof envSchema>;
