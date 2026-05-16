@@ -41,7 +41,10 @@ export interface InvoiceResult {
   externalId: string;
   ettn: string | null;
   invoiceNumber: string | null;
-  status: Extract<InvoiceStatus, "sent" | "approved" | "failed">;
+  status: Extract<
+    InvoiceStatus,
+    "sent" | "approved" | "failed" | "cancelled" | "refunded"
+  >;
   pdfUrl?: string;
   pdfPath: string | null;
   raw: Record<string, unknown>;

@@ -5,7 +5,8 @@ import {
   invoiceEvents,
   invoices,
   type Invoice,
-  type InvoiceStatus
+  type InvoiceStatus,
+  type InvoiceType
 } from "../db/schema";
 import { enqueueInvoiceWebhook } from "./invoiceWebhook";
 
@@ -25,6 +26,8 @@ export async function transitionInvoice(
       responsePayload: Record<string, unknown> | null;
       sentAt: Date | null;
       attempts: number;
+      cancelledAt: Date | null;
+      type: InvoiceType;
     }>;
     notifyWebhook?: boolean;
   }
@@ -63,7 +66,11 @@ export async function transitionInvoice(
         : {}),
       ...(options.patch?.attempts !== undefined
         ? { attempts: options.patch.attempts }
-        : {})
+        : {}),
+      ...(options.patch?.cancelledAt !== undefined
+        ? { cancelledAt: options.patch.cancelledAt }
+        : {}),
+      ...(options.patch?.type !== undefined ? { type: options.patch.type } : {})
     })
     .where(eq(invoices.id, invoice.id));
 

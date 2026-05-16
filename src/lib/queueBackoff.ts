@@ -11,5 +11,5 @@ export const RELIABILITY_MAX_ATTEMPTS = 6;
 
 export function reliabilityBackoffStrategy(attemptsMade: number): number {
   const index = Math.max(0, attemptsMade - 1);
-  return RELIABILITY_BACKOFF_MS[index] ?? RELIABILITY_BACKOFF_MS.at(-1)!;
+  return RELIABILITY_BACKOFF_MS[index] ?? 21_600_000;
 }

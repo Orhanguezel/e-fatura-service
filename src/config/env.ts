@@ -19,7 +19,12 @@ const envSchema = z.object({
   EFATURA_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   SYNC_STATUS_ENABLED: z.coerce.boolean().default(true),
   STATUS_SYNC_INTERVAL_MS: z.coerce.number().int().positive().default(300_000),
-  STATUS_SYNC_BATCH_SIZE: z.coerce.number().int().positive().default(50)
+  STATUS_SYNC_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+  EFATURA_CANCEL_WINDOW_DAYS: z.coerce.number().int().positive().default(7),
+  EFATURA_ADMIN_TOKEN: z
+    .string()
+    .min(16)
+    .default("dev-admin-token-change-me")
 });
 
 export type Env = z.infer<typeof envSchema>;

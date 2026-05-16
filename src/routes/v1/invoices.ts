@@ -3,9 +3,10 @@ import type { FastifyPluginAsync } from "fastify";
 
 import { invoiceEvents, invoices, type Tenant } from "../../db/schema";
 import { buildInvoiceRequest } from "../../domain/buildInvoiceRequest";
-
+import { resolveCancelAction } from "../../domain/cancelRules";
+import { loadEnv } from "../../config/env";
+import { cancelQueue } from "../../queue/cancelQueue";
 import { AppError } from "../../lib/errors";
-import { notImplementedResponse } from "../../lib/notImplemented";
 import {
   cancelInvoiceSchema,
   invoiceCreateSchema,
@@ -13,6 +14,7 @@ import {
 } from "./invoiceSchemas";
 
 export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
+  const env = loadEnv();
   fastify.addHook("preHandler", fastify.authenticate);
 
   function requireTenant(tenant: Tenant | undefined): Tenant {
@@ -275,11 +277,29 @@ export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
         throw new AppError(409, "pdf_not_ready", "Invoice PDF is not ready yet");
       }
 
-      if (/^https?:\/\//.test(invoice.pdfPath)) {
-        return reply.redirect(invoice.pdfPath);
+      const { loadEnv } = await import("../../config/env");
+      const env = loadEnv();
+
+      const { InvoiceManager } = await import("../../domain/InvoiceManager");
+      const manager = new InvoiceManager({
+        encryptionKey: env.EFATURA_ENC_KEY,
+        nilveraMockMode: env.EFATURA_NILVERA_MOCK
+      });
+
+      if (!invoice.externalId) {
+        throw new AppError(409, "external_id_missing", "Invoice has no external ID");
       }
 
-      return reply.send({ pdf_path: invoice.pdfPath });
+      const pdfResult = await manager.getPdf(tenant, invoice.externalId);
+
+      if ("url" in pdfResult) {
+        return reply.redirect(pdfResult.url);
+      }
+
+      return reply
+        .type("application/pdf")
+        .header("Content-Disposition", `attachment; filename="invoice-${String(invoice.id)}.pdf"`)
+        .send(pdfResult);
     }
   );
 
@@ -306,14 +326,61 @@ export const invoiceRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     async (request, reply) => {
-      invoiceParamsSchema.parse(request.params);
-      cancelInvoiceSchema.parse(request.body);
+      const tenant = requireTenant(request.tenant);
+      const params = invoiceParamsSchema.parse(request.params);
+      const body = cancelInvoiceSchema.parse(request.body);
 
-      return reply
-        .code(501)
-        .send(
-          notImplementedResponse("Invoice cancel is scheduled for phase 4")
+      const [invoice] = await fastify.db
+        .select()
+        .from(invoices)
+        .where(and(eq(invoices.tenantId, tenant.id), eq(invoices.id, params.id)))
+        .limit(1);
+
+      if (!invoice) {
+        throw new AppError(404, "invoice_not_found", "Invoice not found");
+      }
+
+      if (invoice.status === "cancelled" || invoice.status === "refunded") {
+        return reply.code(200).send({
+          invoice_id: invoice.id,
+          status: invoice.status
+        });
+      }
+
+      const resolution = resolveCancelAction(
+        invoice,
+        tenant,
+        env.EFATURA_CANCEL_WINDOW_DAYS
+      );
+
+      await fastify.db.insert(invoiceEvents).values({
+        invoiceId: invoice.id,
+        fromStatus: invoice.status,
+        toStatus: invoice.status,
+        actor: "api",
+        reason: `Cancel queued (${resolution.action}): ${body.reason}`,
+        createdAt: new Date()
+      });
+
+      try {
+        await cancelQueue.add("cancel-invoice", {
+          invoiceId: invoice.id,
+          reason: body.reason,
+          targetStatus: resolution.targetStatus,
+          invoiceType: resolution.invoiceType
+        });
+      } catch {
+        throw new AppError(
+          503,
+          "service_unavailable",
+          "Cancel queue is unavailable"
         );
+      }
+
+      return reply.code(202).send({
+        invoice_id: invoice.id,
+        status: resolution.targetStatus
+      });
     }
   );
 };

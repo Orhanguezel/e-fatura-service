@@ -12,9 +12,10 @@
 
 İsteklerin servisten geldiğini doğrulamak için `HMAC-SHA256` kullanılır.
 
-**Headers:**
-- `X-Efatura-Signature`: `HMAC-SHA256(timestamp + "." + body, tenant.webhook_secret)`
-- `X-Efatura-Timestamp`: Unix timestamp (saniye).
+**Headers (API-CONTRACT D4 ile hizalı):**
+- `X-Efatura-Event`: `invoice.sent` | `invoice.approved` | …
+- `X-Efatura-Timestamp`: ISO-8601 UTC (`occurred_at` ile aynı)
+- `X-Efatura-Signature`: `sha256=` + HMAC-SHA256(`timestamp + "." + rawBody`, decrypt(`webhook_secret`))
 
 **Doğrulama (İstemci tarafı):**
 1. Timestamp'in güncelliğini kontrol et (±5 dakika).
@@ -24,22 +25,18 @@
 
 ```json
 {
+  "event": "invoice.approved",
   "invoice_id": 123,
   "idempotency_key": "order_456",
   "status": "approved",
   "ettn": "550e8400-e29b-41d4-a716-446655440000",
   "invoice_number": "ABC2026000000001",
-  "pdf_url": "https://efatura.guezelwebdesign.com/v1/invoices/123/pdf",
-  "error_message": null,
-  "timestamp": "2026-05-16T12:10:00Z"
+  "pdf_url": "/v1/invoices/123/pdf",
+  "occurred_at": "2026-05-16T12:10:00.000Z"
 }
 ```
 
 ## 4. Retry Politikası
 
-BullMQ `webhook-queue` kullanılacak:
-- Deneme 1: Hemen
-- Deneme 2: 1 dk sonra
-- Deneme 3: 5 dk sonra
-- Deneme 4: 30 dk sonra
-- Deneme 5: 2 saat sonra
+BullMQ `webhook-deliver` kuyruğu: **6 deneme** (ilk + 5 retry), gecikmeler:
+`1m → 5m → 30m → 2h → 6h` (`src/lib/queueBackoff.ts`).

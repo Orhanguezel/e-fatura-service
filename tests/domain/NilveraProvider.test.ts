@@ -57,36 +57,32 @@ describe("NilveraProvider mock mode", () => {
 describe("NilveraProvider HTTP mode", () => {
   it("creates draft, confirms and maps status without network", async () => {
     const calls: string[] = [];
-    const client: any = {
-      post: async (url: string): Promise<{ data: any }> => {
+    const draftUuid = "550e8400-e29b-41d4-a716-446655440000";
+    const client: NilveraHttpClient = {
+      post: async (url: string) => {
         calls.push(`POST ${url}`);
 
-        if (url === "/General/EArchive/Create") {
+        if (url === "/Draft/Create") {
           return {
             data: {
-              ID: "123",
-              InvoiceId: "123"
-            }
-          };
-        }
-
-        if (url === "/General/EArchive/123/Approve") {
-          return {
-            data: {
-              UUID: "550e8400-e29b-41d4-a716-446655440000",
+              UUID: draftUuid,
               InvoiceNumber: "SPO202600000001"
             }
           };
         }
 
+        if (url === "/Draft/ConfirmAndSend") {
+          return { data: {} };
+        }
+
         return { data: {} };
       },
-      get: async (url: string): Promise<{ data: any }> => {
+      get: async (url: string) => {
         calls.push(`GET ${url}`);
 
         return {
           data: {
-            Status: "Approved"
+            StatusCode: "succeed"
           }
         };
       }
@@ -101,12 +97,13 @@ describe("NilveraProvider HTTP mode", () => {
     const result = await provider.create(sampleRequest, context);
 
     expect(calls).toEqual([
-      "POST /General/EArchive/Create",
-      "POST /General/EArchive/123/Approve"
+      "POST /Draft/Create",
+      "POST /Draft/ConfirmAndSend",
+      `GET /Invoices/${draftUuid}/Status`
     ]);
     expect(result).toMatchObject({
-      externalId: "550e8400-e29b-41d4-a716-446655440000",
-      ettn: "550e8400-e29b-41d4-a716-446655440000",
+      externalId: draftUuid,
+      ettn: draftUuid,
       invoiceNumber: "SPO202600000001",
       status: "approved"
     });

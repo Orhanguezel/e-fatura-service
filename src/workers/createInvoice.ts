@@ -59,7 +59,7 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
       }
 
       try {
-        let sending = await transitionInvoice(db, invoice, "sending", {
+        const currentInvoice = await transitionInvoice(db, invoice, "sending", {
           actor: "worker",
           reason: "Job started",
           notifyWebhook: false
@@ -67,30 +67,30 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
 
         let result: InvoiceResult;
 
-        if (sending.externalId) {
+        if (currentInvoice.externalId) {
           const status = await manager.syncInvoiceStatus(
             tenant,
-            sending.externalId
+            currentInvoice.externalId
           );
           result = {
-            externalId: sending.externalId,
-            ettn: sending.ettn,
-            invoiceNumber: sending.invoiceNumber,
+            externalId: currentInvoice.externalId,
+            ettn: currentInvoice.ettn,
+            invoiceNumber: currentInvoice.invoiceNumber,
             status,
-            pdfPath: sending.pdfPath,
+            pdfPath: currentInvoice.pdfPath,
             raw: { synced: true }
           };
         } else {
-          const apiPayload = invoiceCreateSchema.parse(sending.requestPayload);
+          const apiPayload = invoiceCreateSchema.parse(currentInvoice.requestPayload);
           const domainRequest = mapApiPayloadToInvoiceRequest(
             apiPayload,
             tenant,
-            sending.idempotencyKey
+            currentInvoice.idempotencyKey
           );
           result = await manager.createInvoice(tenant, domainRequest);
         }
 
-        await transitionInvoice(db, sending, result.status, {
+        await transitionInvoice(db, currentInvoice, result.status, {
           actor: "worker",
           reason: "Integrator success",
           patch: {
@@ -109,21 +109,12 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
         const retryable =
           error instanceof IntegratorError ? error.retryable : true;
 
-        const current =
-          (
-            await db
-              .select()
-              .from(invoices)
-              .where(eq(invoices.id, invoice.id))
-              .limit(1)
-          )[0] ?? invoice;
-
-        await transitionInvoice(db, current, "failed", {
+        await transitionInvoice(db, invoice, "failed", {
           actor: "worker",
           reason: message,
           patch: {
             errorMessage: message,
-            attempts: current.attempts + 1
+            attempts: invoice.attempts + 1
           },
           notifyWebhook: true
         });

@@ -1,28 +1,27 @@
-import { Queue } from "bullmq";
-import { type Env } from "../config/env";
-import { redisConnection } from "../queue/invoiceQueue";
+import type { Env } from "../config/env";
+import { startCancelInvoiceWorker } from "./cancelInvoice";
 import { startCreateInvoiceWorker } from "./createInvoice";
 import { startDeliverWebhookWorker } from "./deliverWebhook";
-import { syncStatusWorker } from "./syncStatus";
+import { startSyncStatusWorker } from "./syncStatus";
 
-export async function startWorkers(env: Env) {
-  const createInvoiceRuntime = startCreateInvoiceWorker(env);
-  const deliverWebhookRuntime = startDeliverWebhookWorker(env);
-  
-  // Register repeatable sync job
-  const syncQueue = new Queue("status-sync", { connection: redisConnection });
-  await syncQueue.add("sync-all", {}, {
-    repeat: {
-      pattern: "*/15 * * * *" // Every 15 minutes
-    }
-  });
+export type WorkersRuntime = {
+  close: () => Promise<void>;
+};
+
+export async function startWorkers(env: Env): Promise<WorkersRuntime> {
+  const runtimes = [
+    startCreateInvoiceWorker(env),
+    startCancelInvoiceWorker(env),
+    startDeliverWebhookWorker(env)
+  ];
+
+  if (env.SYNC_STATUS_ENABLED) {
+    runtimes.push(startSyncStatusWorker(env));
+  }
 
   return {
     close: async () => {
-      await createInvoiceRuntime.close();
-      await deliverWebhookRuntime.close();
-      await syncStatusWorker.close();
-      await syncQueue.close();
+      await Promise.all(runtimes.map((runtime) => runtime.close()));
     }
   };
 }

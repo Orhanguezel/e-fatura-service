@@ -1,15 +1,15 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 
 export type NilveraHttpClient = {
-  get: <T>(
+  get: (
     url: string,
     config?: AxiosRequestConfig
-  ) => Promise<Pick<AxiosResponse<T>, "data">>;
-  post: <T>(
+  ) => Promise<Pick<AxiosResponse<unknown>, "data">>;
+  post: (
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig
-  ) => Promise<Pick<AxiosResponse<T>, "data">>;
+  ) => Promise<Pick<AxiosResponse<unknown>, "data">>;
 };
 export type NilveraClientFactory = (
   apiKey: string,

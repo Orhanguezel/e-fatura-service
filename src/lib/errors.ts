@@ -13,6 +13,8 @@ export type ApiErrorCode =
   | "webhook_unreachable"
   | "not_implemented"
   | "internal_server_error"
+  | "invalid_state"
+  | "external_id_missing"
   | "request_error";
 
 export class AppError extends Error {
