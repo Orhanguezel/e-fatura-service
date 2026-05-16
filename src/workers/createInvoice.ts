@@ -10,7 +10,7 @@ import { transitionInvoice } from "../lib/invoiceTransitions";
 import { mapApiPayloadToInvoiceRequest } from "../domain/mapApiPayload";
 import type { InvoiceResult } from "../domain/types";
 import { reliabilityBackoffStrategy } from "../lib/queueBackoff";
-import { redisConnection } from "../queue/invoiceQueue";
+import { createRedisConnection } from "../queue/invoiceQueue";
 import { invoiceCreateSchema } from "../routes/v1/invoiceSchemas";
 
 type CreateInvoiceJobData = {
@@ -28,6 +28,7 @@ function getErrorMessage(error: unknown): string {
 
 export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
   const { db, pool } = createDatabase(env.DATABASE_URL);
+  const redisConnection = createRedisConnection(env.REDIS_URL);
   const manager = new InvoiceManager({
     encryptionKey: env.EFATURA_ENC_KEY,
     nilveraMockMode: env.EFATURA_NILVERA_MOCK
@@ -61,8 +62,7 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
       try {
         const currentInvoice = await transitionInvoice(db, invoice, "sending", {
           actor: "worker",
-          reason: "Job started",
-          notifyWebhook: false
+          reason: "Job started"
         });
 
         let result: InvoiceResult;
@@ -101,8 +101,7 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
             responsePayload: result.raw,
             sentAt: new Date(),
             errorMessage: null
-          },
-          notifyWebhook: true
+          }
         });
       } catch (error: unknown) {
         const message = getErrorMessage(error);
@@ -115,8 +114,7 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
           patch: {
             errorMessage: message,
             attempts: invoice.attempts + 1
-          },
-          notifyWebhook: true
+          }
         });
 
         if (!retryable) {
@@ -138,6 +136,7 @@ export function startCreateInvoiceWorker(env: Env = loadEnv()): WorkerRuntime {
     worker,
     close: async () => {
       await worker.close();
+      await redisConnection.quit();
       await pool.end();
     }
   };
