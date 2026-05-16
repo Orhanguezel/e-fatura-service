@@ -20,3 +20,7 @@ coverage/
 # local agent/editor config
 .claude/
 .cursor/
+
+# nginx basic-auth secret (CLAUDE.md: sır commit edilmez)
+.htpasswd
+*.htpasswd
