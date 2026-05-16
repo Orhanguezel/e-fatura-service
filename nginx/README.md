@@ -1,44 +1,33 @@
-# Nginx + Admin Basic Auth — Kurulum
+# Nginx — Kurulum
 
-> `efatura.conf`: API public, **admin (panel + `/v1/admin`) HTTP Basic Auth arkasında**.
-> DNS `efatura.guezelwebdesign.com` kullanıcı tarafından eklendi (yayılma bekleyebilir).
+> `efatura.conf`: reverse proxy. API public; **admin auth uygulama katmanında
+> (`X-Admin-Token`)**, Nginx Basic Auth YOK (kullanıcı kararı).
+> DNS `efatura.guezelwebdesign.com` eklendi → 72.61.93.212 (yayıldı).
 > Desen: scraper-service. Internal port **8210** (VPS port tablosuyla teyit — WORK-PLAN).
 
-## Güvenlik modeli (katmanlı)
+## Güvenlik modeli
 
 | Yol | Koruma |
 |---|---|
 | `/healthz` | Yok (liveness) |
 | `/` (tenant API) | Uygulama: `X-Api-Key` (+ IP allowlist) |
-| `/admin` (panel HTML) | **Nginx Basic Auth** |
-| `/v1/admin/` (admin API) | **Nginx Basic Auth** + uygulama `X-Admin-Token` |
+| `/admin` (panel HTML) | Yok — salt kabuk, veri göstermez |
+| `/v1/admin/` (admin API) | Uygulama: `X-Admin-Token` |
 
-Panel HTML'i artık public değil; Basic Auth + uygulama token'ı birlikte.
+Panel HTML'i public; tek başına veri sızdırmaz çünkü tüm `/v1/admin`
+çağrıları `X-Admin-Token` ister. **Güvenlik tek noktada:** `X-Admin-Token`
+güçlü ve gizli tutulmalı (`.env`, commit edilmez — CLAUDE.md).
 
-## 1. htpasswd oluştur (VPS'te — SECRET, repoya KOYMA)
+## 1. Statik admin dosyaları
 
-```bash
-sudo apt-get install -y apache2-utils          # htpasswd aracı
-sudo mkdir -p /etc/nginx/efatura
-sudo htpasswd -c /etc/nginx/efatura/.htpasswd admin   # parola sorar
-# ek kullanıcı: sudo htpasswd /etc/nginx/efatura/.htpasswd kullanici2
-sudo chown root:www-data /etc/nginx/efatura/.htpasswd
-sudo chmod 640 /etc/nginx/efatura/.htpasswd
-```
-
-> `.htpasswd` **commit edilmez** (CLAUDE.md sır kuralı). `.gitignore` kapsar.
-
-## 2. Statik admin dosyaları
-
-`/admin` location `alias /var/www/e-fatura-service/admin/` serve eder.
-Deploy'da repo `admin/` dizinini oraya kopyala (veya symlink):
+`/admin` location `alias /var/www/e-fatura-service/admin/` serve eder:
 
 ```bash
 sudo mkdir -p /var/www/e-fatura-service
 sudo rsync -a --delete /path/to/e-fatura-service/admin/ /var/www/e-fatura-service/admin/
 ```
 
-## 3. Nginx config
+## 2. Nginx config
 
 ```bash
 sudo cp nginx/efatura.conf /etc/nginx/sites-available/efatura.conf
@@ -47,31 +36,29 @@ sudo nginx -t            # syntax testi
 sudo systemctl reload nginx
 ```
 
-## 4. TLS sertifikası (DNS yayıldıktan sonra)
+## 3. TLS sertifikası (DNS yayıldı)
 
 ```bash
 sudo certbot certonly --webroot -w /var/www/certbot -d efatura.guezelwebdesign.com
 sudo systemctl reload nginx
 ```
-> DNS henüz yayılmadıysa certbot başarısız olur — `dig efatura.guezelwebdesign.com`
-> sunucu IP'sini gösterince tekrar dene. O ana kadar 443 bloğu için geçici
-> self-signed sertifika kullanılabilir veya 80 üzerinden test edilir.
 
-## 5. Doğrulama
+## 4. Doğrulama
 
 ```bash
-curl -I https://efatura.guezelwebdesign.com/healthz                 # 200, auth yok
-curl -I https://efatura.guezelwebdesign.com/admin/                  # 401 (auth yok)
-curl -I -u admin:PAROLA https://efatura.guezelwebdesign.com/admin/  # 200
-curl -I https://efatura.guezelwebdesign.com/v1/admin/invoices       # 401
+curl -I https://efatura.guezelwebdesign.com/healthz                  # 200
+curl -I https://efatura.guezelwebdesign.com/admin/                   # 200 (panel kabuk)
+curl -s  https://efatura.guezelwebdesign.com/v1/admin/invoices       # 401 (token yok)
+curl -s -H "X-Admin-Token: <token>" \
+        https://efatura.guezelwebdesign.com/v1/admin/invoices        # 200
 ```
 
 ## Notlar
 
 - `admin/index.html` **Faz 4 kapsamı** (Codex erken yazdı, henüz review/merge
-  edilmedi). Bu Nginx koruması güvenlik için bağımsız teslim edildi; admin
-  panel/API'nin Faz 4 review'i ayrıca yapılacak.
+  edilmedi). `/v1/admin` endpoint'leri Faz 4'te gelir; o zamana dek panel
+  fonksiyonel değildir. Faz 4 review'i ayrıca yapılacak.
 - Port 8210 VPS port tablosuyla deploy fazında teyit (kamanilan 8097,
   kaman-social 8079, scraper 8200) — WORK-PLAN Faz 6.
-- Alternatif: ayrı `admin.efatura...` subdomain istenirse `/admin` yerine ayrı
-  `server` bloğu; mekanizma (auth_basic) aynı.
+- Şifre koruması sonradan istenirse: `/admin` + `/v1/admin/` location'larına
+  `auth_basic` + `auth_basic_user_file` eklemek yeterli (git history'de mevcut).
