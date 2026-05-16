@@ -8,6 +8,7 @@ import { NilveraProvider } from "./providers/NilveraProvider";
 export type ProviderFactoryOptions = {
   encryptionKey: string;
   logger?: ProviderContext["logger"];
+  nilveraMockMode?: boolean;
 };
 
 export type ProviderResolution = {
@@ -42,17 +43,22 @@ export function createProviderResolution(
     case "nilvera": {
       const defaultBaseUrl =
         tenant.mode === "test"
-          ? "https://test-api.nilvera.com"
+          ? "https://apitest.nilvera.com"
           : "https://api.nilvera.com";
+
+      const apiKey = credentialString(
+        credentials.api_key ?? credentials.apiKey,
+        ""
+      );
 
       return {
         provider: new NilveraProvider(
-          credentialString(credentials.api_key ?? credentials.apiKey, ""),
+          apiKey,
           credentialString(
             credentials.base_url ?? credentials.baseUrl,
             defaultBaseUrl
           ),
-          tenant.mode === "test"
+          options.nilveraMockMode ?? (tenant.mode === "test" && apiKey.length === 0)
         ),
         context
       };

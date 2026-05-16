@@ -72,7 +72,7 @@ export const invoices = mysqlTable(
       .primaryKey(),
     tenantId: bigint("tenant_id", { mode: "number", unsigned: true })
       .notNull()
-      .references(() => tenants.id),
+      .references(() => tenants.id, { onDelete: "restrict" }),
     idempotencyKey: varchar("idempotency_key", { length: 190 }).notNull(),
     status: varchar("status", { length: 20 })
       .$type<InvoiceStatus>()
@@ -120,7 +120,7 @@ export const invoiceEvents = mysqlTable(
       .primaryKey(),
     invoiceId: bigint("invoice_id", { mode: "number", unsigned: true })
       .notNull()
-      .references(() => invoices.id),
+      .references(() => invoices.id, { onDelete: "cascade" }),
     fromStatus: varchar("from_status", { length: 20 }).$type<InvoiceStatus>(),
     toStatus: varchar("to_status", { length: 20 }).$type<InvoiceStatus>().notNull(),
     actor: varchar("actor", { length: 40 }).notNull(),

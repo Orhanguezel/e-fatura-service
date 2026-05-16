@@ -42,6 +42,7 @@ export interface InvoiceResult {
   ettn: string | null;
   invoiceNumber: string | null;
   status: Extract<InvoiceStatus, "sent" | "approved" | "failed">;
+  pdfUrl?: string;
   pdfPath: string | null;
   raw: Record<string, unknown>;
   error?: {

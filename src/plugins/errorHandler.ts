@@ -3,6 +3,18 @@ import { ZodError } from "zod";
 
 import { AppError } from "../lib/errors";
 
+type FastifyValidationError = Error & {
+  validation?: unknown;
+};
+
+function hasFastifyValidation(error: unknown): error is FastifyValidationError {
+  return (
+    error instanceof Error &&
+    "validation" in error &&
+    Array.isArray(error.validation)
+  );
+}
+
 function getStatusCode(error: unknown): number {
   if (error instanceof AppError) {
     return error.statusCode;
@@ -36,6 +48,16 @@ export const errorHandlerPlugin = fp(async (fastify) => {
           code: "validation_error",
           message: "Validation failed",
           details: { issues: error.issues }
+        }
+      });
+    }
+
+    if (hasFastifyValidation(error)) {
+      return reply.status(400).send({
+        error: {
+          code: "validation_error",
+          message: "Validation failed",
+          details: { issues: error.validation }
         }
       });
     }

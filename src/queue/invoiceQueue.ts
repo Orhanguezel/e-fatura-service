@@ -2,6 +2,7 @@ import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 
 import { loadEnv } from "../config/env";
+import { RELIABILITY_MAX_ATTEMPTS } from "../lib/queueBackoff";
 
 const env = loadEnv();
 
@@ -12,11 +13,8 @@ export const redisConnection = new Redis(env.REDIS_URL || "redis://127.0.0.1:637
 export const invoiceQueue = new Queue("invoice-create", {
   connection: redisConnection,
   defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: "exponential",
-      delay: 5000
-    },
+    attempts: RELIABILITY_MAX_ATTEMPTS,
+    backoff: { type: "custom" },
     removeOnComplete: true,
     removeOnFail: false
   }

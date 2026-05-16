@@ -24,6 +24,41 @@ describe("error envelope", () => {
     });
     await app.close();
   });
+
+  it("maps Fastify schema validation failures to validation_error", async () => {
+    const app = Fastify({ logger: false });
+    await app.register(errorHandlerPlugin);
+    app.post(
+      "/validate",
+      {
+        schema: {
+          body: {
+            type: "object",
+            required: ["name"],
+            properties: {
+              name: { type: "string" }
+            }
+          }
+        }
+      },
+      async () => ({ ok: true })
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/validate",
+      payload: {}
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: {
+        code: "validation_error",
+        message: "Validation failed"
+      }
+    });
+    await app.close();
+  });
 });
 
 function ipNotAllowed(): AppError {

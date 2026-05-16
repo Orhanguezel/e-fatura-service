@@ -2,6 +2,7 @@ export type ApiErrorCode =
   | "validation_error"
   | "unauthorized"
   | "ip_not_allowed"
+  | "tenant_inactive"
   | "invoice_not_found"
   | "idempotency_conflict"
   | "invoice_rule_violation"
@@ -9,6 +10,7 @@ export type ApiErrorCode =
   | "pdf_not_ready"
   | "integrator_error"
   | "service_unavailable"
+  | "webhook_unreachable"
   | "not_implemented"
   | "internal_server_error"
   | "request_error";
@@ -41,5 +43,5 @@ export function ipNotAllowed(): AppError {
 }
 
 export function tenantInactive(): AppError {
-  return new AppError(403, "request_error", "Tenant is inactive");
+  return new AppError(403, "tenant_inactive", "Tenant is inactive");
 }

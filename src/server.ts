@@ -1,11 +1,11 @@
 import { buildApp } from "./app";
 import { loadEnv } from "./config/env";
-import { startCreateInvoiceWorker } from "./workers/createInvoice";
+import { startWorkers } from "./workers";
 
 const env = loadEnv();
 const app = await buildApp(env);
 const workerRuntime = env.WORKER_ENABLED
-  ? startCreateInvoiceWorker(env)
+  ? await startWorkers(env)
   : null;
 
 async function shutdown(signal: NodeJS.Signals) {
